@@ -59,7 +59,7 @@ export class UserService {
         try {
             await this.userRepository.updateUser(body, token);
             return handleSend({
-                description: "저장을 완료했습니다. 다시 로그인해주세요.",
+                description: "수정했습니다. 다시 로그인해주세요.",
             }); 
 
         } catch (error) {

@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, QueryRunner, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Feed } from './entity/feed.entity';
-import { BoardType, VoteType } from './feed.model';
+import { VoteType } from './feed.model';
 import { FeedVote } from './entity/feed-vote.entity';
-import { GetFeedDto } from './dto/get-feed.dto';
+import { nowDate } from 'src/config/tools.config';
+import { FeedReport } from './entity/feed-report.entity';
 
 @Injectable()
 export class FeedRepository {
@@ -14,6 +15,9 @@ export class FeedRepository {
 
         @InjectRepository(FeedVote)
         private readonly feedVoteRepository: Repository<FeedVote>,
+
+        @InjectRepository(FeedReport)
+        private readonly feedReportRepository: Repository<FeedReport>,
 
     ) {};
 
@@ -68,6 +72,44 @@ export class FeedRepository {
         return getFeed;
     };
 
+    async getMyFeed(body: any, token: any): Promise<[Feed[], number]> {
+
+        const getMyFeed = await this.feedRepository.createQueryBuilder("feed")
+            .select([
+                "feed.id",
+                "feed.content",
+                "feed.createdAt",
+                "feed.updatedAt",
+                "feed.likeCount",
+                "feed.price",
+                "coin.symbol",
+                "coin.koreanName",
+                "coin.englishName",
+            ])
+            .leftJoin('feed.user', "user")
+            .leftJoin('feed.coin', "coin")
+            .where("user.id = :id", {id: token.id})
+            .andWhere("feed.blockedAt IS NULL")
+            .orderBy("feed.id", "DESC")
+            .getManyAndCount();
+
+        return getMyFeed;
+    };
+
+    async deleteMyFeed(body: any, token: any): Promise<number> {
+        const { feedId } = body;
+
+        const deleteMyFeed = await this.feedRepository.createQueryBuilder("feed")
+            .update()
+            .set({ blockedAt: nowDate()})
+            .where("feed.id = :id", { id: feedId })
+            .andWhere("feed.user_id = :userId", { userId: token.id })
+            .andWhere("feed.blocked_at IS NULL")
+            .execute();
+
+        return deleteMyFeed.affected;
+    };
+
     async updateFeed(body: any, token: any): Promise<void> {
         const { feedId, title, content, thumbnailURL, meta } = body;
 
@@ -94,19 +136,7 @@ export class FeedRepository {
             await feedQueryBuilder.execute();
     };
 
-    async getVote(body: any, token: any): Promise<object> {
-        const { feedId, voteTpye } = body;
-
-        const getVote =  await this.feedVoteRepository.createQueryBuilder("feedVote")
-            .select()
-            .where("feedVote.user = :userId", {userId: token.id})
-            .andWhere("feedVote.feed = :feedId", {feedId})
-            .getOne()
-
-        return getVote;
-    };
-
-    async createVote(body: any, token: any): Promise<void> {
+    async createVote(body: any, token: any): Promise<boolean> {
         const { feedId, voteTpye } = body;
 
         const values = {
@@ -115,10 +145,46 @@ export class FeedRepository {
             type: voteTpye,
         }
 
+        const existingVoteCount = await this.feedVoteRepository.count({
+            where: values,
+        });
+    
+        if (existingVoteCount > 0) {
+            return false; 
+        }
+
         await this.feedVoteRepository.createQueryBuilder()
             .insert()
             .values(values)
             .into(FeedVote)
             .execute();
+
+        return true; 
+    };
+
+    async reportFeed(body: any, token: any): Promise<boolean> {
+        const { feedId, type } = body;
+
+        const values = {
+            user: token.id,
+            feed: feedId,
+            type
+        }
+
+        const existingVoteCount = await this.feedReportRepository.count({
+            where: values,
+        });
+    
+        if (existingVoteCount > 0) {
+            return false; 
+        }
+
+        await this.feedReportRepository.createQueryBuilder()
+            .insert()
+            .values(values)
+            .into(FeedReport)
+            .execute();
+
+        return true; 
     };
 }

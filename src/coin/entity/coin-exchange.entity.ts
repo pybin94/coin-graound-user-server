@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Coin } from "./coin.entity";
 import { Exchange } from "./exchange.entity";
 
@@ -18,9 +18,12 @@ export class CoinExchange {
     @Column({ comment: "종목 구분 코드" })
     ticker: string;
 
-    @CreateDateColumn({ name: "created_at" })
-    createdAt: Date;  
-
-    @Column({ name: "is_delisted", default: false, comment: "상장 폐지 유무" })
+    @Column({ name: "is_delisted", default: false, comment: "상장 폐지 유무 0: 상장, 1: 폐지" })
     isDelisted: boolean;
+
+    @CreateDateColumn({ name: "created_at" })
+    createdAt: Date;
+
+    @UpdateDateColumn({ name: "updated_at" })
+    updatedAt: Date;
 }

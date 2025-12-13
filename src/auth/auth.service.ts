@@ -6,6 +6,7 @@ import { AuthCredentialsDto } from './dto/auth-credential.dto';
 import { JwtService } from '@nestjs/jwt';
 import { Sign } from 'src/helper/sign.helper';
 import { Response } from 'express';
+import { User } from 'src/user/entity/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -42,10 +43,10 @@ export class AuthService {
                 nickname: userInfo.nickname,
                 picture: userInfo.picture,
                 email: userInfo.email,
-            }
+            } as User;
 
             const accessToken = this.jwtService.sign(payload);
-            await this.sign.in(res, accessToken);
+            await this.sign.in(res, accessToken, payload);
 
             const redirectUrl = `http://${process.env.CLIENT_DOMAIN}`;
         // const redirectUrl = `https://${process.env.CLIENT_DOMAIN}`;

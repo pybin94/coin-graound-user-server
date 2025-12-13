@@ -5,15 +5,11 @@ import { Injectable } from '@nestjs/common';
 import { BoardRepository } from 'src/board/board.repository';
 import { SiteRepository } from 'src/site/site.repository';
 import { UserRepository } from 'src/user/user.repository';
-import { LogRepository } from 'src/log/log.repository';
-import { PointLog, PointMemo, PointStauts } from 'src/log/log.model';
-import { PointPayment } from 'src/user/user.model';
-import { minuteCalculator, nowDate } from 'src/config/tools.config';
+import { nowDate } from 'src/config/tools.config';
 import { User } from 'src/user/entity/user.entity';
 import { FeedRepository } from './feed.repository';
 import { ResponseFormat, ResponseStatus } from 'src/config/config.model';
-import { CoinRepository } from 'src/coin/coin.repository';
-import { GetFeedDto } from './dto/get-feed.dto';
+import { GetFeedDto, ReportFeedDto } from './dto/get-feed.dto';
 
 @Injectable()
 export class FeedService {
@@ -98,6 +94,46 @@ export class FeedService {
         }
     }
 
+    async getMyFeed(body: any, token: any): Promise<ResponseFormat> {
+        try{
+            const getMyFeed = await this.feedRepository.getMyFeed(body, token)
+            const [ list, total ] = Object.values(getMyFeed);
+
+            return handleSend(
+                {data:{ list, total }}
+            );
+        } catch (error) {
+            return handleError({
+                title: `[${this.title}] getMyFeed`, 
+                error,
+            })
+        }
+    }
+
+    async deleteMyFeed(body: any, token: any): Promise<ResponseFormat> {
+        try{
+            const deleteMyFeed = await this.feedRepository.deleteMyFeed(body, token)
+
+            let description = "피드가 삭제됐습니다."
+            let statusCode = 1
+
+            if(deleteMyFeed != 1) {
+                description = "삭제할 피드가 없습니다."
+                statusCode = 0
+            }
+
+            return handleSend({
+                description,
+                statusCode,
+            });
+        } catch (error) {
+            return handleError({
+                title: `[${this.title}] deleteMyFeed`, 
+                error,
+            })
+        }
+    }
+
     async updateFeed(body: any, token: any): Promise<ResponseFormat> {
         try{
             const feedData = await this.feedRepository.getFeed(body)
@@ -122,22 +158,39 @@ export class FeedService {
     
     async voteLikeCount(body: any, token: any): Promise<ResponseFormat> {
         try{
-            const getVote = await this.feedRepository.getVote(body, token)
-            if (getVote) {
+            const getVote = await this.feedRepository.createVote(body, token)
+            if (!getVote) {
                 return handleSend({
                     description: "이미 추천했습니다.", 
                     statusCode: ResponseStatus.ERROR,
                 })
             }
-            body.voteTpye = VoteType.LIKE
-            await this.feedRepository.createVote(body, token)
-            await this.feedRepository.voteLikeCount(body)
             return handleSend({})
         } catch (error) {
             return handleError({
                 title:`[${this.title}] voteLikeCount`, 
                 error,
-        }   )
+            })
+        }
+    }
+    
+    async reportFeed(body: ReportFeedDto, token: any): Promise<ResponseFormat> {
+        try{
+            const getVote = await this.feedRepository.reportFeed(body, token)
+            if (!getVote) {
+                return handleSend({
+                    description: "이미 신고했습니다.", 
+                    statusCode: ResponseStatus.ERROR,
+                })
+            }
+            return handleSend({
+                description: "신고가 완료됐습니다."
+            })
+        } catch (error) {
+            return handleError({
+                title:`[${this.title}] voteLikeCount`, 
+                error,
+            })
         }
     }
 }

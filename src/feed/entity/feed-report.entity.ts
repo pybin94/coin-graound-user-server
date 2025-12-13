@@ -15,11 +15,8 @@ export class FeedReport {
   @JoinColumn({ name: "feed_id" })
   feed: Feed;
   
-  @Column({ type: "text", comment: "신고사유" })
-  content: string;
-
-  @Column({ type: "smallint", default: 0 })
-  status: number;
+  @Column({ type: "smallint", comment: "신고사유 1: 도배, 2: 욕설, 3: 광고, 4: 부적절한 글" })
+  type: string;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
