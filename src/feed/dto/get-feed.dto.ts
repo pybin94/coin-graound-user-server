@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString, IsIn, IsNotEmpty, MaxLength, Min } from 'class-validator';
+import { IsNumber, IsOptional, IsString, IsIn, IsNotEmpty, Min, Equals } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ReportTypeEnum } from '../feed.model';
 
@@ -15,14 +15,14 @@ export class GetFeedDto {
 export class GetMyFeedDto {
     @Type(() => Number)
     @IsNumber()
-    @Min(10)
+    @Equals(10, {message: "limit은 10만 허용됩니다."})
     limit: number;
   
     @Type(() => Number)
     @IsNumber()
     @Min(0)
     offset: number;
-  }
+}
 
 export class ReportFeedDto {
     @IsNotEmpty({ message: '피드 ID는 필수입니다.' })

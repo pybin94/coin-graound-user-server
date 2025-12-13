@@ -6,6 +6,7 @@ import { VoteType } from './feed.model';
 import { FeedVote } from './entity/feed-vote.entity';
 import { nowDate } from 'src/config/tools.config';
 import { FeedReport } from './entity/feed-report.entity';
+import { GetMyFeedDto } from './dto/get-feed.dto';
 
 @Injectable()
 export class FeedRepository {
@@ -72,8 +73,9 @@ export class FeedRepository {
         return getFeed;
     };
 
-    async getMyFeed(body: any, token: any): Promise<[Feed[], number]> {
+    async getMyFeed(body: GetMyFeedDto, token: any): Promise<[Feed[], number]> {
 
+        let { limit, offset } = body;
         const getMyFeed = await this.feedRepository.createQueryBuilder("feed")
             .select([
                 "feed.id",
@@ -91,6 +93,8 @@ export class FeedRepository {
             .where("user.id = :id", {id: token.id})
             .andWhere("feed.blockedAt IS NULL")
             .orderBy("feed.id", "DESC")
+            .skip(offset)
+            .take(limit)
             .getManyAndCount();
 
         return getMyFeed;
