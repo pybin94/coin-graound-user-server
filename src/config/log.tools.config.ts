@@ -26,7 +26,7 @@ export const handleSend = ({
 export const handleError = ({
     title, 
     error, 
-    description = "오류! 관리자에게 문의하세요.", 
+    description = "처리 중 문제가 발생했습니다.<br>관리자에게 문의해 주세요.", 
     statusCode = 0,
     data,
 }: {
