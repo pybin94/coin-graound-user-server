@@ -1,25 +1,25 @@
 import { Token } from 'src/user/user.decorator';
 import { JwtAuthGuard } from '../gaurds/jwt-auth.gaurd';
-import { Controller, UseGuards, Body, Post, Req, Patch } from '@nestjs/common';
+import { Controller, UseGuards, Body, Post, Req, Patch, Query } from '@nestjs/common';
 import { PostService } from './post.service';
 
 @Controller('post')
 export class PostController {
-    constructor( 
+    constructor(
         private readonly postService: PostService
-    ) {}
+    ) { }
 
     @UseGuards(JwtAuthGuard)
     @Post('/create')
-    async createPost(@Body() body: any, @Token() token: any, @Req() req: Request): Promise<object> {
-        const createPost = await this.postService.createPost(body, token, req);
+    async createPost(@Body() body: any, @Token() token: any, @Req() req: Request, @Query() query: any): Promise<object> {
+        const createPost = await this.postService.createPost(body, token, req, query);
         return createPost;
     }
 
     @UseGuards(JwtAuthGuard)
     @Post('/list')
-    async postList(@Body() body: any, @Token(false) token: any): Promise<object> {
-        const postList = await this.postService.postList(body, token);
+    async postList(@Body() body: any, @Token(false) token: any, @Query() query: any): Promise<object> {
+        const postList = await this.postService.postList(body, token, query);
         return postList;
     }
 
@@ -47,5 +47,12 @@ export class PostController {
     async voteLikeCount(@Body() body: any, @Token() token: any): Promise<object> {
         const getPost = await this.postService.voteLikeCount(body, token);
         return getPost;
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('/image')
+    async uploadImage(@Body() body: any): Promise<object> {
+        const uploadImage = await this.postService.uploadImage(body);
+        return uploadImage;
     }
 }

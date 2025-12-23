@@ -8,17 +8,17 @@ export class BoardRepository {
     constructor(
         @InjectRepository(Board)
         private readonly boardRepository: Repository<Board>,
-    ) {};
+    ) { };
 
-    async board(body: any): Promise<Board> {
-        const { boardName } = body
+    async board(query: any): Promise<Board> {
+        const { boardId } = query
         const board = await this.boardRepository.createQueryBuilder("board")
             .select()
             .leftJoinAndSelect('board.boardMeta', "boardMeta")
-            .where("board.name = :name", {name: boardName})
+            .where("board.name = :name", { name: boardId })
             .getRawOne();
-            
-        if(!board) {
+
+        if (!board) {
             throw "제거 또는 이전된 페이지입니다."
         }
 

@@ -11,13 +11,13 @@ export class CommentRepository {
     constructor(
         @InjectRepository(Comment)
         private readonly commentRepository: Repository<Comment>,
-        
+
         @InjectRepository(CommentVote)
         private readonly commentVoteRepository: Repository<CommentVote>,
 
         @InjectRepository(Comment)
         private readonly commentReportRepository: Repository<CommentReport>,
-    ) {};
+    ) { };
 
     async getComment(body: any): Promise<any> {
         const { commentId } = body;
@@ -27,7 +27,7 @@ export class CommentRepository {
                 "user.id",
             ])
             .leftJoin('comment.user', "user")
-            .where("comment.id = :id", {id: commentId})
+            .where("comment.id = :id", { id: commentId })
             .getRawOne();
 
         return getComment;
@@ -45,14 +45,15 @@ export class CommentRepository {
                 "comment.blockedAt",
                 "user.id",
                 "user.nickname",
-                "user.level",
                 "user.picture",
             ])
             .leftJoin('comment.user', "user")
-            .where("comment.post = :postId", {postId})
+            .where("comment.post = :postId", { postId })
             .andWhere("comment.parent IS NULL")
             .orderBy("comment.id", "ASC")
             .getMany();
+
+        console.log(rootNode)
 
         const getComments = await Promise.all(rootNode.map((node: any) => this.createTreeStructure(node, treeRepository)));
         return getComments;
@@ -67,7 +68,6 @@ export class CommentRepository {
                 "comment.blockedAt",
                 "user.id",
                 "user.nickname",
-                "user.level",
                 "user.picture",
             ])
             .leftJoin('comment.user', "user")
@@ -81,14 +81,14 @@ export class CommentRepository {
 
         const childNodes = await Promise.all(children.map((child: any) => this.createTreeStructure(child, repository)));
         node.children = childNodes;
-    
+
         return node;
     };
 
     async createComment(body: any, token: any, req: Request, queryRunner: QueryRunner): Promise<void> {
         const { content, postId, parentId, replyComment } = body;
-        const createdIp = req.headers['x-real-ip'] ?  req.headers['x-real-ip'] : "0:0:0:0"
-        
+        const createdIp = req.headers['x-real-ip'] ? req.headers['x-real-ip'] : "0:0:0:0"
+
         const createPostData = {
             post: postId,
             user: token.id,
@@ -116,7 +116,7 @@ export class CommentRepository {
         } else {
             await this.commentRepository.createQueryBuilder()
                 .update()
-                .set({blockedAt: nowDate()})
+                .set({ blockedAt: nowDate() })
                 .where("id = :id", { id: commentId })
                 .execute();
         }

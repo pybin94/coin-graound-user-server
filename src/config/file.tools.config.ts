@@ -7,10 +7,10 @@ export const base64ToFileAndSave = (base64: string, filePath: string) => {
         if (!matches || matches.length !== 3) {
             throw 'Invalid base64 data';
         }
-    
-        const fileBuffer = Buffer.from(matches[2], 'base64');
+
         const uploadFile = path.join(__dirname, filePath);
-        fs.writeFileSync(uploadFile, fileBuffer);
+        fs.mkdirSync(path.dirname(uploadFile), { recursive: true });
+        fs.writeFileSync(uploadFile, matches[2], 'base64');
 
     } catch (error) {
         console.log("[Error] base64ToFileAndSave: ", error)

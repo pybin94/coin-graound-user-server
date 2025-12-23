@@ -6,12 +6,7 @@ import { BoardService } from './board.service';
 @Controller('board')
 @UseGuards(JwtAuthGuard)
 export class BoardController {
-    constructor( 
+    constructor(
         private readonly BoardService: BoardService
-    ) {}
-
-    @Get('/')
-    async createUser(@Body() body: any, @Token() token: any): Promise<object> {
-        return;
-    }
+    ) { }
 }

@@ -19,12 +19,12 @@ export class PostRepository {
 
         @InjectRepository(PostMeta)
         private readonly postMetaRepository: Repository<PostMeta>,
-    ) {};
+    ) { };
 
     async createPost(queryRunner: QueryRunner, body: any, token: any, req: Request): Promise<number> {
         const { title, content, boardId, thumbnailURL, meta } = body;
-        const createdIp = req.headers['x-real-ip'] ?  req.headers['x-real-ip'] : "0:0:0:0"
-        
+        const createdIp = req.headers['x-real-ip'] ? req.headers['x-real-ip'] : "0:0:0:0"
+
         const createPostData = {
             title,
             content,
@@ -33,12 +33,12 @@ export class PostRepository {
             user: token.id,
             createdIp
         }
-
         const user = this.postRepository.create(createPostData);
+        console.log(user)
         const post = await queryRunner.manager.save(user);
 
         if (meta) {
-            meta.forEach(async (item: string, index: number)=>{
+            meta.forEach(async (item: string, index: number) => {
                 const postMetaData = {
                     board: boardId,
                     post: post,
@@ -46,17 +46,7 @@ export class PostRepository {
                     priority: index,
                 }
 
-                if(item["image"]) {
-                    let imageName = (new Date().getTime())
-                    const filePath = `/src/assets/uploads/banner/${imageName}.jpg`
-                    const clientFilePath = `../../../user-client${filePath}`
-
-                    base64ToFileAndSave(item["image"], clientFilePath);
-                    postMetaData["value"] = filePath
-                    postMetaData["type"] = "IMG"
-                } else {
-                    postMetaData["value"] = item["description"]
-                }
+                postMetaData["value"] = item["description"]
 
                 const postMeta = this.postMetaRepository.create(postMetaData);
                 await queryRunner.manager.save(postMeta);
@@ -65,20 +55,29 @@ export class PostRepository {
         return 0
     };
 
-    async postList(body: any, token: any): Promise<object> {
-        const { limit, offset, boardId, searchValue, boardType } = body;
+    async postList(body: any): Promise<object> {
+        const { limit, offset, searchValue, boardId } = body;
 
         const postListQueryBuilder = this.postRepository.createQueryBuilder("post")
+            .select([
+                "post.id",
+                "post.title",
+                "post.createdAt",
+                "post.updatedAt",
+                "post.viewCount",
+                "post.likeCount",
+                "post.dislikeCount",
+            ])
             .leftJoin('post.user', "user")
             .addSelect([
+                "user.id",
                 "user.nickname",
-                "user.level",
                 "user.picture"
-            ]) 
+            ])
             .leftJoin('post.comment', "comment")
             .addSelect([
                 "comment.id",
-            ]) 
+            ])
             .where("post.board = :boardId", { boardId })
             .andWhere("comment.blockedAt IS NULL")
             .orderBy("post.id", "DESC")
@@ -90,30 +89,7 @@ export class PostRepository {
             .limit(limit)
             .offset(offset)
 
-        switch (boardType) {
-            case BoardType.BANNER: // 배너 게시판
-                postListQueryBuilder
-                    .leftJoin('post.postMeta', "postMeta")
-                    .addSelect([
-                        "postMeta.id",
-                        "postMeta.value",
-                        "postMeta.priority",
-                        "postMeta.type",
-                    ]) 
-                break;
-            case BoardType.HELP: // 1:1 게시판
-                if(!token) {
-                    throw "로그인 후 이용해주세요."
-                }
-                postListQueryBuilder
-                    .andWhere("post.user = :userId", {userId: token.id})
-                totalQueryBuilder
-                    .andWhere("post.user = :userId", {userId: token.id})
-
-                break;
-        }
-
-        if(searchValue) {
+        if (searchValue) {
             postListQueryBuilder.andWhere(new Brackets(qb => {
                 qb.where("post.title LIKE :searchValue")
                     .orWhere("user.nickname LIKE :searchValue")
@@ -125,13 +101,13 @@ export class PostRepository {
                     .orWhere("user.nickname LIKE :searchValue")
             }), { searchValue: `%${searchValue}%` });
         }
-        
+
         const postList = await postListQueryBuilder.getMany();
         const postTotal = await totalQueryBuilder.getCount();
         const list = postList;
         const total = postTotal;
 
-        return {list, total};
+        return { list, total };
     };
 
     async getPost(body: any): Promise<Post> {
@@ -148,7 +124,6 @@ export class PostRepository {
                 "post.dislikeCount",
                 "user.nickname",
                 "user.id",
-                "user.level",
                 "user.picture",
                 "postMeta.id",
                 "postMeta.value",
@@ -157,9 +132,9 @@ export class PostRepository {
             ])
             .leftJoin('post.user', "user")
             .leftJoin('post.postMeta', "postMeta")
-            .where("post.id = :id", {id: postId})
+            .where("post.id = :id", { id: postId })
             .getOne();
-            
+
         return getPost;
     };
 
@@ -168,31 +143,31 @@ export class PostRepository {
 
         await this.postRepository.createQueryBuilder("post")
             .update()
-            .set({title, content, thumbnailURL})
-            .where("id = :id", {id: postId})
+            .set({ title, content, thumbnailURL })
+            .where("id = :id", { id: postId })
             .execute();
 
         if (meta) {
-                meta.forEach(async (item: string, index: number)=>{
-                
+            meta.forEach(async (item: string, index: number) => {
+
                 const postMetaData = {}
-                if(item["image"]) {
+                if (item["image"]) {
                     const filePath = `/src/assets/uploads/banner/${(new Date().getTime())}.jpg`
                     const clientFilePath = `../../../user-client`
-                    base64ToFileAndSave(item["image"], clientFilePath+filePath);
-                    if(item["beforeFilePath"]) {
-                        removeFile(clientFilePath+item["beforeFilePath"])
+                    base64ToFileAndSave(item["image"], clientFilePath + filePath);
+                    if (item["beforeFilePath"]) {
+                        removeFile(clientFilePath + item["beforeFilePath"])
                     }
                     postMetaData["value"] = filePath
-                } else if (item["description"]){
+                } else if (item["description"]) {
                     postMetaData["value"] = item["description"]
                 }
-                
+
                 if (Object.keys(postMetaData).length !== 0) {
                     await this.postMetaRepository.createQueryBuilder("postMeta")
                         .update()
                         .set(postMetaData)
-                        .where("id = :id", {id: item["id"]})
+                        .where("id = :id", { id: item["id"] })
                         .execute();
                 }
             })
@@ -204,8 +179,8 @@ export class PostRepository {
 
         await this.postRepository.createQueryBuilder("post")
             .update()
-            .set({viewCount: () => "view_count + 1"})
-            .where("id = :id", {id: postId})
+            .set({ viewCount: () => "view_count + 1" })
+            .where("id = :id", { id: postId })
             .execute();
     };
 
@@ -214,24 +189,24 @@ export class PostRepository {
 
         const postQueryBuilder = this.postRepository.createQueryBuilder("post")
             .update()
-            .where("id = :id", {id: postId})
+            .where("id = :id", { id: postId })
 
-            if (voteTpye == VoteType.LIKE) {
-                postQueryBuilder.set({likeCount: () => "like_count + 1"})
-            } else if (voteTpye == VoteType.DISLIKE) {
-                postQueryBuilder.set({dislikeCount: () => "dislike_count + 1"})
-            }
+        if (voteTpye == VoteType.LIKE) {
+            postQueryBuilder.set({ likeCount: () => "like_count + 1" })
+        } else if (voteTpye == VoteType.DISLIKE) {
+            postQueryBuilder.set({ dislikeCount: () => "dislike_count + 1" })
+        }
 
-            await postQueryBuilder.execute();
+        await postQueryBuilder.execute();
     };
 
     async getVote(body: any, token: any): Promise<object> {
         const { postId, voteTpye } = body;
 
-        const getVote =  await this.postVoteRepository.createQueryBuilder("postVote")
+        const getVote = await this.postVoteRepository.createQueryBuilder("postVote")
             .select()
-            .where("postVote.user = :userId", {userId: token.id})
-            .andWhere("postVote.post = :postId", {postId})
+            .where("postVote.user = :userId", { userId: token.id })
+            .andWhere("postVote.post = :postId", { postId })
             .getOne()
 
         return getVote;
@@ -252,4 +227,16 @@ export class PostRepository {
             .into(PostVote)
             .execute();
     };
+
+    async uploadImage(body: any): Promise<object> {
+        const { image } = body;
+        const imageName = (new Date().getTime())
+        const filePath = `/src/assets/uploads/post/${imageName}.webp`
+        const clientFilePath = `../../../user-client${filePath}`
+
+        base64ToFileAndSave(image, clientFilePath);
+
+        return { filePath }
+    };
+
 }

@@ -7,9 +7,9 @@ import { ResponseFormat } from 'src/config/config.model';
 
 @Controller('feed')
 export class FeedController {
-    constructor( 
+    constructor(
         private readonly feedService: FeedService
-    ) {}
+    ) { }
 
     @Get('/')
     async getFeed(@Query() query: GetFeedDto): Promise<ResponseFormat> {
@@ -37,7 +37,7 @@ export class FeedController {
         const createFeed = await this.feedService.createFeed(body, token, req);
         return createFeed;
     }
-    
+
     @UseGuards(JwtAuthGuard)
     @Patch('/')
     async updateFeed(@Body() body: any, @Token() token: any): Promise<ResponseFormat> {
