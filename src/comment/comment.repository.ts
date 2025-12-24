@@ -53,8 +53,6 @@ export class CommentRepository {
             .orderBy("comment.id", "ASC")
             .getMany();
 
-        console.log(rootNode)
-
         const getComments = await Promise.all(rootNode.map((node: any) => this.createTreeStructure(node, treeRepository)));
         return getComments;
     }

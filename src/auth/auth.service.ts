@@ -15,24 +15,24 @@ export class AuthService {
         private readonly userRepository: UserRepository,
         private jwtService: JwtService,
         private sign: Sign,
-    ) {}
+    ) { }
 
     async signOut(res: any) {
         try {
             await this.sign.out(res)
         } catch (error) {
             return handleError({
-                title: "[Service] signOut", 
+                title: "[Service] signOut",
                 error,
             })
         }
     }
 
-    async setAuth(user: any, res: Response) {
+    async setAuth(user: any, res: Response, redirectUrl?: string) {
         try {
             let userInfo = await this.userRepository.getUserInfo(user);
-            if(!userInfo) {
-                if(!user.nickname) {
+            if (!userInfo) {
+                if (!user.nickname) {
                     user.nickname = user.email.split('@')[0];
                 }
                 userInfo = await this.userRepository.createUser(user);
@@ -47,13 +47,10 @@ export class AuthService {
 
             const accessToken = this.jwtService.sign(payload);
             await this.sign.in(res, accessToken, payload);
-
-            const redirectUrl = `http://${process.env.CLIENT_DOMAIN}`;
-        // const redirectUrl = `https://${process.env.CLIENT_DOMAIN}`;
-            return res.redirect(redirectUrl);
+            return res.redirect(redirectUrl || `http://${process.env.CLIENT_DOMAIN}`);
         } catch (error) {
             return handleError({
-                title: "[Service] setAuth", 
+                title: "[Service] setAuth",
                 error,
             })
         }

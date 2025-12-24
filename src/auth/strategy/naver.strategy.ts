@@ -1,14 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
+import { ExecutionContext, Injectable } from '@nestjs/common';
+import { AuthGuard, PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-naver';
 
 @Injectable()
 export class NaverStrategy extends PassportStrategy(Strategy, 'naver') {
     constructor() {
         super({
-        clientID: process.env.NAVER_CLIENT_ID,
-        clientSecret: process.env.NAVER_CLIENT_SECRET,
-        callbackURL: `${process.env.SERVER_DOMAIN}/naver/redirect`,
+            clientID: process.env.NAVER_CLIENT_ID,
+            clientSecret: process.env.NAVER_CLIENT_SECRET,
+            callbackURL: `${process.env.SERVER_DOMAIN}/naver/redirect`,
         });
     }
 
@@ -21,6 +21,18 @@ export class NaverStrategy extends PassportStrategy(Strategy, 'naver') {
             email: emails?.[0],
             nickname,
             profileImage,
+        };
+    }
+}
+
+@Injectable()
+export class NaverAuthGuard extends AuthGuard("naver") {
+    getAuthenticateOptions(context: ExecutionContext) {
+        const req = context.switchToHttp().getRequest();
+        const state = req.query.state || null;
+
+        return {
+            state,
         };
     }
 }

@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
+import { ExecutionContext, Injectable } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { AuthGuard, PassportStrategy } from '@nestjs/passport';
 import { Strategy, VerifyCallback } from 'passport-google-oauth20';
 
 @Injectable()
@@ -10,10 +11,11 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
             callbackURL: `${process.env.SERVER_DOMAIN}/google/redirect`,
             scope: ['email', 'profile'],
+            passReqToCallback: true,
         });
     }
 
-    async validate(accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<any> {
+    async validate(req: Request, accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<any> {
         const { name, emails, photos } = profile;
         const user = {
             email: emails[0].value,
@@ -22,5 +24,21 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
             accessToken,
         };
         done(null, user);
+    }
+}
+
+@Injectable()
+export class GoogleAuthGuard extends AuthGuard('google') {
+    constructor(private reflector: Reflector) {
+        super();
+    }
+
+    getAuthenticateOptions(context: ExecutionContext) {
+        const req = context.switchToHttp().getRequest();
+        const state = req.query.state || null;
+
+        return {
+            state,
+        };
     }
 }
